@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Macro Calculator</title>
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --card: #ffffff;
+    --text: #1a1a1a;
+    --muted: #6b6b6b;
+    --border: #e4e4e7;
+    --accent: #7c3aed;
+    --accent2: #ec4899;
+    --cal: #eab308;
+    --protein: #f97316;
+    --fat: #ec4899;
+    --fiber: #84cc16;
+    --carbs: #14b8a6;
+    --water: #3b82f6;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121214;
+      --card: #1c1c1f;
+      --text: #f2f2f2;
+      --muted: #9a9a9f;
+      --border: #2c2c30;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #121214;
+    --card: #1c1c1f;
+    --text: #f2f2f2;
+    --muted: #9a9a9f;
+    --border: #2c2c30;
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); height: 100%; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 24px 20px 40px;
+  }
+  h1 {
+    font-size: 1.4rem;
+    margin: 4px 0 2px;
+    letter-spacing: -0.01em;
+  }
+  .sub {
+    color: var(--muted);
+    font-size: 0.88rem;
+    margin: 0 0 20px;
+    line-height: 1.4;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 16px;
+  }
+  label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 8px;
+  }
+  .weight-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  input[type="number"] {
+    flex: 1;
+    font-size: 1.6rem;
+    font-weight: 700;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    width: 100%;
+    min-width: 0;
+  }
+  input[type="number"]:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+  .unit-toggle {
+    display: flex;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .unit-toggle button {
+    border: none;
+    background: transparent;
+    color: var(--text);
+    padding: 10px 14px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .unit-toggle button.active {
+    background: var(--accent);
+    color: white;
+  }
+  .slider {
+    margin-top: 14px;
+  }
+  input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent);
+  }
+  .results {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .stat {
+    border-radius: 14px;
+    padding: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat .val {
+    font-size: 1.5rem;
+    font-weight: 800;
+    line-height: 1.1;
+  }
+  .stat .lbl {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    opacity: 0.85;
+    margin-top: 2px;
+  }
+  .stat.cal { background: color-mix(in srgb, var(--cal) 18%, var(--card)); }
+  .stat.protein { background: color-mix(in srgb, var(--protein) 18%, var(--card)); }
+  .stat.fat { background: color-mix(in srgb, var(--fat) 18%, var(--card)); }
+  .stat.fiber { background: color-mix(in srgb, var(--fiber) 18%, var(--card)); }
+  .stat.carbs { background: color-mix(in srgb, var(--carbs) 18%, var(--card)); grid-column: span 2; }
+  .stat.water { background: color-mix(in srgb, var(--water) 18%, var(--card)); grid-column: span 2; }
+  .stat.carbs, .stat.water { display: flex; align-items: center; justify-content: space-between; }
+  .formula {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+  .footer-note {
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 18px;
+    line-height: 1.5;
+  }
+  .breakdown-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin: 0 0 12px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>⭐ Macro Breakdown</h1>
+  <p class="sub">Based on the sticky-note formula: 26 cal/kg, 2g protein/kg, calories÷30 for fat, calories×0.014 for fiber, remainder for carbs, and 1L water per 30kg.</p>
+
+  <div class="card">
+    <label>Body weight</label>
+    <div class="weight-row">
+      <input type="number" id="weightInput" value="100" min="1" step="0.1">
+      <div class="unit-toggle">
+        <button id="kgBtn" class="active">kg</button>
+        <button id="lbBtn">lb</button>
+      </div>
+    </div>
+    <div class="slider">
+      <input type="range" id="weightSlider" min="30" max="200" step="0.5" value="100">
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="breakdown-title">Daily targets</p>
+    <div class="results">
+      <div class="stat cal">
+        <div class="val" id="calVal">2600</div>
+        <div class="lbl">Calories</div>
+        <div class="formula">wt × 26</div>
+      </div>
+      <div class="stat protein">
+        <div class="val" id="proteinVal">200g</div>
+        <div class="lbl">Protein</div>
+        <div class="formula">wt × 2</div>
+      </div>
+      <div class="stat fat">
+        <div class="val" id="fatVal">87g</div>
+        <div class="lbl">Fat</div>
+        <div class="formula">cal ÷ 30</div>
+      </div>
+      <div class="stat fiber">
+        <div class="val" id="fiberVal">36g</div>
+        <div class="lbl">Fiber</div>
+        <div class="formula">cal × 0.014</div>
+      </div>
+      <div class="stat carbs">
+        <div>
+          <div class="val" id="carbsVal">254g</div>
+          <div class="lbl">Carbs</div>
+        </div>
+        <div class="formula">remaining cal ÷ 4</div>
+      </div>
+      <div class="stat water">
+        <div>
+          <div class="val" id="waterVal">3.3L</div>
+          <div class="lbl">Water</div>
+        </div>
+        <div class="formula">wt ÷ 30</div>
+      </div>
+    </div>
+  </div>
+
+  <p class="footer-note">These are simple ratio-based estimates from a fitness reel, not personalized medical or nutrition advice. Adjust to how your body actually responds.</p>
+</div>
+
+<script>
+(function() {
+  const weightInput = document.getElementById('weightInput');
+  const weightSlider = document.getElementById('weightSlider');
+  const kgBtn = document.getElementById('kgBtn');
+  const lbBtn = document.getElementById('lbBtn');
+
+  const calVal = document.getElementById('calVal');
+  const proteinVal = document.getElementById('proteinVal');
+  const fatVal = document.getElementById('fatVal');
+  const fiberVal = document.getElementById('fiberVal');
+  const carbsVal = document.getElementById('carbsVal');
+  const waterVal = document.getElementById('waterVal');
+
+  let unit = 'kg';
+
+  function toKg(value) {
+    return unit === 'kg' ? value : value * 0.453592;
+  }
+
+  function fmt(n, decimals) {
+    return Number(n.toFixed(decimals));
+  }
+
+  function recalc() {
+    const raw = parseFloat(weightInput.value);
+    const weightKg = isNaN(raw) || raw <= 0 ? 0 : toKg(raw);
+
+    const calories = weightKg * 26;
+    const proteinG = weightKg * 2;
+    const fatG = calories / 30;
+    const fiberG = calories * 0.014;
+    const proteinCal = proteinG * 4;
+    const fatCal = fatG * 9;
+    const carbsG = Math.max(0, (calories - proteinCal - fatCal) / 4);
+    const waterL = weightKg / 30;
+
+    calVal.textContent = Math.round(calories).toLocaleString();
+    proteinVal.textContent = fmt(proteinG, 0) + 'g';
+    fatVal.textContent = fmt(fatG, 0) + 'g';
+    fiberVal.textContent = fmt(fiberG, 0) + 'g';
+    carbsVal.textContent = fmt(carbsG, 0) + 'g';
+    waterVal.textContent = fmt(waterL, 1) + 'L';
+  }
+
+  function setUnit(newUnit) {
+    if (newUnit === unit) return;
+    const raw = parseFloat(weightInput.value) || 0;
+    if (newUnit === 'kg') {
+      weightInput.value = fmt(raw * 0.453592, 1);
+      weightSlider.min = 30; weightSlider.max = 200;
+    } else {
+      weightInput.value = fmt(raw / 0.453592, 1);
+      weightSlider.min = 66; weightSlider.max = 440;
+    }
+    unit = newUnit;
+    kgBtn.classList.toggle('active', unit === 'kg');
+    lbBtn.classList.toggle('active', unit === 'lb');
+    weightSlider.value = weightInput.value;
+    recalc();
+  }
+
+  weightInput.addEventListener('input', function() {
+    const v = parseFloat(weightInput.value);
+    if (!isNaN(v)) weightSlider.value = v;
+    recalc();
+  });
+
+  weightSlider.addEventListener('input', function() {
+    weightInput.value = weightSlider.value;
+    recalc();
+  });
+
+  kgBtn.addEventListener('click', function() { setUnit('kg'); });
+  lbBtn.addEventListener('click', function() { setUnit('lb'); });
+
+  recalc();
+})();
+</script>
+</body>
+</html>
